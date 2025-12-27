@@ -5,8 +5,9 @@ include(CMakeFindDependencyMacro)
 # Boost.DLL and Boost.Multiprecision are header-only - just need Boost headers
 find_dependency(Boost)
 
-# Firebird5 client library (transitive dependency)
-find_dependency(Firebird5 CONFIG PATHS "$ENV{ASV_PLAT_PORTS}/firebird5" NO_DEFUALT_PATH) 
+# Firebird2 client library (transitive dependency)
+# Look relative to this package's install location (sibling in ports tree)
+find_dependency(Firebird2 CONFIG PATHS "${CMAKE_CURRENT_LIST_DIR}/../../../firebird2")
 
 include("${CMAKE_CURRENT_LIST_DIR}/fb-cppTargets.cmake")
 

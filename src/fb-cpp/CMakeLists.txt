@@ -5,9 +5,20 @@ project(fb-cpp CXX)
 option(FB_CPP_USE_BOOST_DLL "Enable Boost.DLL support for loading fbclient at runtime" ON)
 option(FB_CPP_USE_BOOST_MULTIPRECISION "Enable Boost.Multiprecision helpers for INT128 and DECFLOAT types" ON)
 
-file(GLOB_RECURSE SRC
-	"*.h"
-	"*.cpp"
+# Explicit source list for Firebird 2.5 C API port
+set(SRC
+	fb-api.h
+	config.h
+	Client.h
+	Client.cpp
+	Attachment.h
+	Attachment.cpp
+	Transaction.h
+	Transaction.cpp
+	Statement.h
+	Statement.cpp
+	Exception.h
+	Exception.cpp
 )
 
 add_library(${PROJECT_NAME}
@@ -30,7 +41,7 @@ endif()
 target_link_libraries(${PROJECT_NAME}
 	PUBLIC
 		Boost::headers
-		Firebird5::fbclient
+		Firebird2::fbclient
 	PRIVATE
 		${CMAKE_DL_LIBS}
 )

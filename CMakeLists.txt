@@ -26,8 +26,8 @@ include(asv_cmake_defaults)
 asv_cmake_defaults( )
 ###############
 
-# Find Firebird with ASV ports path
-find_package(Firebird5 CONFIG REQUIRED PATHS ${ASV_PLAT_PORTS}/firebird5 NO_DEFAULT_PATH)
+# Find Firebird2 with ASV ports path
+find_package(Firebird2 CONFIG REQUIRED PATHS ${ASV_PLAT_PORTS}/firebird2 NO_DEFAULT_PATH)
 
 # Find Boost with ASV ports path
 find_package(Boost CONFIG REQUIRED
@@ -39,7 +39,7 @@ find_package(Boost CONFIG REQUIRED
 # Debug output
 asv_print_package_properties(
     Boost::headers
-    Firebird5::fbclient
+    Firebird2::fbclient
 )
 
 # Boost.DLL is header-only, included in Boost::headers
