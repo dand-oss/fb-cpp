@@ -22,6 +22,13 @@ project(fb-cpp-main
 	LANGUAGES CXX
 )
 
+###############
+# ASI default settings
+list(APPEND CMAKE_MODULE_PATH "$ENV{ASV_CMAKE}")
+include(asv_cmake_defaults)
+asv_cmake_defaults( )
+###############
+
 enable_language(CXX)
 include(CTest)
 
