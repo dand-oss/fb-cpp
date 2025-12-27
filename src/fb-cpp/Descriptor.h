@@ -26,6 +26,7 @@
 #define FBCPP_DESCRIPTOR_H
 
 #include "fb-api.h"
+#include <string>
 
 
 ///
@@ -279,7 +280,21 @@ namespace fbcpp
 		/// Indicates whether the column or parameter can contain null values.
 		///
 		bool isNullable;
-		// FIXME: more things
+
+		///
+		/// Field name as defined in the database schema.
+		///
+		std::string field;
+
+		///
+		/// Column alias if specified in the query, otherwise same as field.
+		///
+		std::string alias;
+
+		///
+		/// Name of the table/relation this field belongs to.
+		///
+		std::string relation;
 	};
 }  // namespace fbcpp
 

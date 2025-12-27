@@ -102,6 +102,9 @@ Statement::Statement(
 				.offset = 0,
 				.nullOffset = 0,
 				.isNullable = static_cast<bool>(metadata->isNullable(&statusWrapper, index)),
+				.field = metadata->getField(&statusWrapper, index),
+				.alias = metadata->getAlias(&statusWrapper, index),
+				.relation = metadata->getRelation(&statusWrapper, index),
 			};
 
 			switch (descriptor.originalType)
