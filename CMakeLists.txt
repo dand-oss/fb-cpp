@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
 
-set(VCPKG_ROOT "vcpkg")
-set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -29,9 +26,31 @@ include(asv_cmake_defaults)
 asv_cmake_defaults( )
 ###############
 
-enable_language(CXX)
-include(CTest)
+# Find Firebird with ASV ports path
+find_package(Firebird5 CONFIG REQUIRED PATHS ${ASV_PLAT_PORTS}/firebird5 NO_DEFAULT_PATH)
 
+# Find Boost with ASV ports path
+find_package(Boost CONFIG REQUIRED
+    PATHS ${ASV_PLAT_PORTS}/boost NO_DEFAULT_PATH
+    COMPONENTS
+        headers
+)
+
+# Debug output
+asv_print_package_properties(
+    Boost::headers
+    Firebird5::fbclient
+)
+
+# Boost.DLL is header-only, included in Boost::headers
+# Set to OFF - we link fbclient directly, no dynamic loading needed
+set(FB_CPP_USE_BOOST_DLL OFF)
+
+enable_language(CXX)
+
+# Disable testing - requires boost_unit_test_framework
+set(BUILD_TESTING OFF)
+include(CTest)
 
 if(MSVC)
 	add_compile_options(

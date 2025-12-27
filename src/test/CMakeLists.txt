@@ -8,18 +8,22 @@ file(GLOB_RECURSE SRC
 	"*.cpp"
 )
 
-
 add_executable(${PROJECT_NAME}
 	${SRC}
 )
 
-find_package(Boost REQUIRED
-	COMPONENTS
+# Find Boost with ASV ports path
+find_package(Boost CONFIG REQUIRED
+    PATHS ${ASV_PLAT_PORTS}/boost NO_DEFAULT_PATH
+    COMPONENTS
 		filesystem
 		unit_test_framework
 )
 
-find_package(firebird REQUIRED)
+asv_print_package_properties(
+    Boost::filesystem
+    Boost::unit_test_framework
+)
 
 target_include_directories(${PROJECT_NAME}
 	PUBLIC ${Boost_INCLUDE_DIR}
@@ -27,7 +31,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
 	PRIVATE fb-cpp
-	PRIVATE firebird
+	PRIVATE Firebird5::fbclient
 	PRIVATE Boost::filesystem
 	PRIVATE Boost::unit_test_framework
 )
