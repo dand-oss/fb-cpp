@@ -23,22 +23,7 @@
  */
 
 #include "Client.h"
-#include "Exception.h"
-#include <cassert>
 
-using namespace fbcpp;
-using namespace fbcpp::impl;
-
-
-void Client::shutdown()
-{
-	assert(isValid());
-
-	auto dispatcher = fbRef(master->getDispatcher());
-	const auto status = newStatus();
-	StatusWrapper statusWrapper{*this, status.get()};
-
-	dispatcher->shutdown(&statusWrapper, 0, fb_shutrsn_app_stopped);
-
-	master = nullptr;
-}
+// Client implementation is now header-only for the 2.5 C API
+// since it doesn't need to manage IMaster or other OO API interfaces.
+// The shutdown() method from 3.0+ API is not available in 2.5.

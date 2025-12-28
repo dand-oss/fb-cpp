@@ -23,64 +23,6 @@
  */
 
 #include "Exception.h"
-#include "Client.h"
-#include <string>
-#include <cassert>
 
-using namespace fbcpp;
-using namespace fbcpp::impl;
-
-
-void StatusWrapper::checkException(StatusWrapper* status)
-{
-	if (status->dirty && (status->getState() & fb::IStatus::STATE_ERRORS))
-		throw DatabaseException{status->client, status->getErrors()};
-}
-
-void StatusWrapper::catchException(fb::IStatus* status) noexcept
-{
-	assert(false);
-}
-
-
-std::string DatabaseException::buildMessage(Client& client, const std::intptr_t* statusVector)
-{
-	constexpr char DEFAULT_MESSAGE[] = "Unknown database error";
-
-	if (!statusVector)
-		return DEFAULT_MESSAGE;
-
-	const auto util = client.getUtil();
-
-	const auto status = client.newStatus();
-	status->setErrors(statusVector);
-
-	constexpr unsigned MAX_BUFFER_SIZE = 32u * 1024u;
-	unsigned bufferSize = 256u;
-	std::string message;
-
-	while (bufferSize <= MAX_BUFFER_SIZE)
-	{
-		std::string buffer(bufferSize, '\0');
-		const auto written = util->formatStatus(buffer.data(), bufferSize, status.get());
-
-		if (written < bufferSize && buffer[0] != '\0')
-		{
-			message = written == 0 ? std::string{buffer.c_str()} : std::string{buffer.data(), written};
-			break;
-		}
-
-		if (bufferSize == MAX_BUFFER_SIZE)
-		{
-			message = buffer.c_str();
-			break;
-		}
-
-		bufferSize = (bufferSize > MAX_BUFFER_SIZE / 2u) ? MAX_BUFFER_SIZE : bufferSize * 2u;
-	}
-
-	if (message.empty())
-		message = DEFAULT_MESSAGE;
-
-	return message;
-}
+// Exception implementation is now header-only for the 2.5 C API
+// since we use the simple isc_interprete() function.

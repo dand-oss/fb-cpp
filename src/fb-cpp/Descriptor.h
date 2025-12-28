@@ -28,6 +28,32 @@
 #include "fb-api.h"
 #include <string>
 
+// FB 3.0+ SQL types not present in FB 2.5 - define placeholders
+#ifndef SQL_BOOLEAN
+#define SQL_BOOLEAN 32764
+#endif
+#ifndef SQL_TIMESTAMP_TZ
+#define SQL_TIMESTAMP_TZ 32754
+#endif
+#ifndef SQL_TIMESTAMP_TZ_EX
+#define SQL_TIMESTAMP_TZ_EX 32748
+#endif
+#ifndef SQL_TIME_TZ
+#define SQL_TIME_TZ 32756
+#endif
+#ifndef SQL_TIME_TZ_EX
+#define SQL_TIME_TZ_EX 32750
+#endif
+#ifndef SQL_INT128
+#define SQL_INT128 32752
+#endif
+#ifndef SQL_DEC16
+#define SQL_DEC16 32760
+#endif
+#ifndef SQL_DEC34
+#define SQL_DEC34 32762
+#endif
+
 
 ///
 /// fb-cpp namespace.

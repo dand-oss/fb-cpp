@@ -30,7 +30,6 @@
 #include "Transaction.h"
 #include "Descriptor.h"
 #include "Statement.h"
-#include "Blob.h"
-#include "EventListener.h"
+// Blob and EventListener are not ported to FB 2.5 C API
 
 #endif  // FBCPP_H

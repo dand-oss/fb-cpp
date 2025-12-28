@@ -27,12 +27,9 @@
 
 #include "config.h"
 #include "fb-api.h"
-#include "SmartPtrs.h"
 #include <cassert>
-#include <concepts>
 #include <memory>
 #include <string>
-#include <type_traits>
 
 #if FB_CPP_USE_BOOST_DLL != 0
 #include <boost/dll.hpp>
@@ -46,20 +43,21 @@ namespace fbcpp
 {
 	///
 	/// Represents a Firebird client library instance.
-	/// The Client must exist and remain valid while there are other objects using it, such as Attachment, Transaction
-	/// and Statement.
+	///
+	/// With the Firebird 2.5 C API, the Client class primarily serves as:
+	/// - A library loader when using Boost.DLL to dynamically load fbclient
+	/// - A marker/factory for creating connections
+	///
+	/// The Client must exist and remain valid while there are other objects using it,
+	/// such as Attachment, Transaction and Statement.
 	///
 	class Client final
 	{
 	public:
 		///
-		/// Constructs a Client object that uses the specified IMaster interface.
+		/// Constructs a Client object that uses the system-installed fbclient library.
 		///
-		explicit Client(fb::IMaster* master)
-			: master{master}
-		{
-			assert(master);
-		}
+		Client() = default;
 
 #if FB_CPP_USE_BOOST_DLL != 0
 		///
@@ -69,7 +67,8 @@ namespace fbcpp
 		explicit Client(const boost::dll::fs::path& fbclientLibPath,
 			boost::dll::load_mode::type loadMode = boost::dll::load_mode::append_decorations |
 				boost::dll::load_mode::search_system_folders)
-			: Client{boost::dll::shared_library{fbclientLibPath, loadMode}}
+			: fbclientLib_{fbclientLibPath, loadMode},
+			  usingDynamicLib_{true}
 		{
 		}
 
@@ -78,12 +77,9 @@ namespace fbcpp
 		/// representing the Firebird client library (or embedded engine).
 		///
 		explicit Client(boost::dll::shared_library fbclientLib)
-			: fbclientLib(fbclientLib)
+			: fbclientLib_{std::move(fbclientLib)},
+			  usingDynamicLib_{true}
 		{
-			const auto fbGetMasterInterface =
-				fbclientLib.get<decltype(fb::fb_get_master_interface)>("fb_get_master_interface");
-			master = fbGetMasterInterface();
-			assert(master);
 		}
 #endif
 
@@ -92,32 +88,23 @@ namespace fbcpp
 		/// A moved Client object becomes invalid.
 		///
 		Client(Client&& o) noexcept
-			: master{o.master},
-			  util{o.util},
-			  int128Util{o.int128Util},
-			  decFloat16Util{o.decFloat16Util},
-			  decFloat34Util{o.decFloat34Util}
+			: valid_{o.valid_}
 #if FB_CPP_USE_BOOST_DLL != 0
 			  ,
-			  fbclientLib{std::move(o.fbclientLib)}
+			  fbclientLib_{std::move(o.fbclientLib_)},
+			  usingDynamicLib_{o.usingDynamicLib_}
 #endif
 		{
-			o.master = nullptr;
-			o.util = nullptr;
-			o.int128Util = nullptr;
-			o.decFloat16Util = nullptr;
-			o.decFloat34Util = nullptr;
+			o.valid_ = false;
 		}
 
 		///
-		/// If the Client object was created using Boost.DLL, this destructor just releases the internal
-		/// boost::dll::shared_library resource.
-		/// It nevers automatically shuts down the Firebird client library (or embedded engine) instance.
+		/// If the Client object was created using Boost.DLL, this destructor just releases
+		/// the internal boost::dll::shared_library resource.
 		///
 		~Client() noexcept = default;
 
 		Client& operator=(Client&&) = delete;
-
 		Client& operator=(const Client& o) = delete;
 		Client(const Client&) = delete;
 
@@ -125,96 +112,34 @@ namespace fbcpp
 		///
 		/// Returns whether the Client object is valid.
 		///
-		bool isValid() noexcept
+		bool isValid() const noexcept
 		{
-			return master != nullptr;
+			return valid_;
+		}
+
+#if FB_CPP_USE_BOOST_DLL != 0
+		///
+		/// Returns whether using a dynamically loaded library.
+		///
+		bool isDynamicLibrary() const noexcept
+		{
+			return usingDynamicLib_;
 		}
 
 		///
-		/// Returns the Firebird IMaster interface.
+		/// Returns the loaded library (if using Boost.DLL).
 		///
-		fb::IMaster* getMaster() noexcept
+		const boost::dll::shared_library& getLibrary() const noexcept
 		{
-			return master;
+			return fbclientLib_;
 		}
-
-		///
-		/// Returns a Firebird IUtil interface.
-		///
-		fb::IUtil* getUtil()
-		{
-			assert(master);
-
-			if (!util)
-				util = master->getUtilInterface();
-
-			return util;
-		}
-
-		///
-		/// Returns a Firebird IInt128 interface.
-		///
-		template <std::derived_from<fb::IStatus> StatusType>
-		fb::IInt128* getInt128Util(StatusType* status)
-		{
-			assert(status);
-
-			if (!int128Util)
-				int128Util = getUtil()->getInt128(status);
-
-			return int128Util;
-		}
-
-		///
-		/// Returns a Firebird IDecFloat16 interface.
-		///
-		template <std::derived_from<fb::IStatus> StatusType>
-		fb::IDecFloat16* getDecFloat16Util(StatusType* status)
-		{
-			assert(status);
-
-			if (!decFloat16Util)
-				decFloat16Util = getUtil()->getDecFloat16(status);
-
-			return decFloat16Util;
-		}
-
-		///
-		/// Returns a Firebird IDecFloat34 interface.
-		///
-		template <std::derived_from<fb::IStatus> StatusType>
-		fb::IDecFloat34* getDecFloat34Util(StatusType* status)
-		{
-			assert(status);
-
-			if (!decFloat34Util)
-				decFloat34Util = getUtil()->getDecFloat34(status);
-
-			return decFloat34Util;
-		}
-
-		///
-		/// Creates and returns a Firebird IStatus instance.
-		///
-		FbUniquePtr<fb::IStatus> newStatus()
-		{
-			assert(master);
-			return fbUnique(master->getStatus());
-		}
-
-		///
-		/// Shuts down the Firebird client library (or embedded engine) instance.
-		///
-		void shutdown();
+#endif
 
 	private:
-		fb::IMaster* master;
-		fb::IUtil* util = nullptr;
-		fb::IInt128* int128Util = nullptr;
-		fb::IDecFloat16* decFloat16Util = nullptr;
-		fb::IDecFloat34* decFloat34Util = nullptr;
+		bool valid_ = true;
 #if FB_CPP_USE_BOOST_DLL != 0
-		boost::dll::shared_library fbclientLib;
+		boost::dll::shared_library fbclientLib_;
+		bool usingDynamicLib_ = false;
 #endif
 	};
 }  // namespace fbcpp

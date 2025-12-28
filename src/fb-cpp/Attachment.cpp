@@ -25,58 +25,72 @@
 #include "Attachment.h"
 #include "Client.h"
 #include "Exception.h"
+#include <cassert>
 
 using namespace fbcpp;
-using namespace fbcpp::impl;
 
 
 Attachment::Attachment(Client& client, const std::string& uri, const AttachmentOptions& options)
-	: client{client}
+	: client_{client}
 {
-	const auto master = client.getMaster();
+	// Build Database Parameter Block
+	DPB dpb;
 
-	const auto status = client.newStatus();
-	StatusWrapper statusWrapper{client, status.get()};
+	if (const auto& connectionCharSet = options.getConnectionCharSet())
+		dpb.addString(isc_dpb_lc_ctype, *connectionCharSet);
 
-	auto dpbBuilder = fbUnique(master->getUtilInterface()->getXpbBuilder(&statusWrapper, fb::IXpbBuilder::DPB,
-		reinterpret_cast<const std::uint8_t*>(options.getDpb().data()),
-		static_cast<unsigned>(options.getDpb().size())));
+	if (const auto& userName = options.getUserName())
+		dpb.addString(isc_dpb_user_name, *userName);
 
-	if (const auto connectionCharSet = options.getConnectionCharSet())
-		dpbBuilder->insertString(&statusWrapper, isc_dpb_lc_ctype, connectionCharSet->c_str());
+	if (const auto& password = options.getPassword())
+		dpb.addString(isc_dpb_password, *password);
 
-	if (const auto userName = options.getUserName())
-		dpbBuilder->insertString(&statusWrapper, isc_dpb_user_name, userName->c_str());
+	if (const auto& role = options.getRole())
+		dpb.addString(isc_dpb_sql_role_name, *role);
 
-	if (const auto password = options.getPassword())
-		dpbBuilder->insertString(&statusWrapper, isc_dpb_password, password->c_str());
-
-	if (const auto role = options.getRole())
-		dpbBuilder->insertString(&statusWrapper, isc_dpb_sql_role_name, role->c_str());
-
-	auto dispatcher = fbRef(master->getDispatcher());
-	const auto dpbBuffer = dpbBuilder->getBuffer(&statusWrapper);
-	const auto dpbBufferLen = dpbBuilder->getBufferLength(&statusWrapper);
+	StatusVector status{};
 
 	if (options.getCreateDatabase())
-		handle.reset(dispatcher->createDatabase(&statusWrapper, uri.c_str(), dpbBufferLen, dpbBuffer));
+	{
+		isc_create_database(
+			status.data(),
+			static_cast<short>(uri.size()),
+			const_cast<char*>(uri.c_str()),
+			&handle_,
+			dpb.size(),
+			const_cast<char*>(dpb.data()),
+			0);
+	}
 	else
-		handle.reset(dispatcher->attachDatabase(&statusWrapper, uri.c_str(), dpbBufferLen, dpbBuffer));
+	{
+		isc_attach_database(
+			status.data(),
+			static_cast<short>(uri.size()),
+			const_cast<char*>(uri.c_str()),
+			&handle_,
+			dpb.size(),
+			const_cast<char*>(dpb.data()));
+	}
+
+	if (hasError(status))
+		throw Exception(status, "Failed to " + std::string(options.getCreateDatabase() ? "create" : "attach to") + " database");
 }
 
 void Attachment::disconnectOrDrop(bool drop)
 {
 	assert(isValid());
 
-	const auto status = client.newStatus();
-	StatusWrapper statusWrapper{client, status.get()};
+	StatusVector status{};
 
 	if (drop)
-		handle->dropDatabase(&statusWrapper);
+		isc_drop_database(status.data(), &handle_);
 	else
-		handle->detach(&statusWrapper);
+		isc_detach_database(status.data(), &handle_);
 
-	handle.reset();
+	handle_ = 0;
+
+	if (hasError(status))
+		throw Exception(status, drop ? "Failed to drop database" : "Failed to detach from database");
 }
 
 

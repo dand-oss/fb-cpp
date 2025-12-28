@@ -26,7 +26,6 @@
 #define FBCPP_ATTACHMENT_H
 
 #include "fb-api.h"
-#include "SmartPtrs.h"
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -170,8 +169,8 @@ namespace fbcpp
 
 	///
 	/// Represents a connection to a Firebird database.
-	/// The Attachment must exist and remain valid while there are other objects using it, such as Transaction and
-	/// Statement.
+	/// The Attachment must exist and remain valid while there are other objects using it,
+	/// such as Transaction and Statement.
 	///
 	class Attachment final
 	{
@@ -187,9 +186,10 @@ namespace fbcpp
 		/// A moved Attachment object becomes invalid.
 		///
 		Attachment(Attachment&& o) noexcept
-			: client{o.client},
-			  handle{std::move(o.handle)}
+			: client_{o.client_},
+			  handle_{o.handle_}
 		{
+			o.handle_ = 0;
 		}
 
 		Attachment& operator=(Attachment&&) = delete;
@@ -219,9 +219,9 @@ namespace fbcpp
 		///
 		/// Returns whether the Attachment object is valid.
 		///
-		bool isValid() noexcept
+		bool isValid() const noexcept
 		{
-			return handle != nullptr;
+			return handle_ != 0;
 		}
 
 		///
@@ -229,15 +229,24 @@ namespace fbcpp
 		///
 		Client& getClient() noexcept
 		{
-			return client;
+			return client_;
 		}
 
 		///
-		/// Returns the internal Firebird IAttachment handle.
+		/// Returns the internal Firebird database handle.
 		///
-		FbRef<fb::IAttachment> getHandle() noexcept
+		isc_db_handle getHandle() const noexcept
 		{
-			return handle;
+			return handle_;
+		}
+
+		///
+		/// Returns a pointer to the internal Firebird database handle.
+		/// Used for API calls that require a pointer to the handle.
+		///
+		isc_db_handle* getHandlePtr() noexcept
+		{
+			return &handle_;
 		}
 
 		///
@@ -254,8 +263,8 @@ namespace fbcpp
 		void disconnectOrDrop(bool drop);
 
 	private:
-		Client& client;
-		FbRef<fb::IAttachment> handle;
+		Client& client_;
+		isc_db_handle handle_ = 0;
 	};
 }  // namespace fbcpp
 

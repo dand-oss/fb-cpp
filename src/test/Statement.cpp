@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(getTypeReturnsCorrectStatementType)
 	BOOST_CHECK(updateStmt.getType() == StatementType::UPDATE);
 
 	Statement deleteStmt{attachment, transaction, "delete from t"};
-	BOOST_CHECK(deleteStmt.getType() == StatementType::DELETE);
+	BOOST_CHECK(deleteStmt.getType() == StatementType::DELETE_);
 }
 
 BOOST_AUTO_TEST_CASE(getInputOutputDescriptors)

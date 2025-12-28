@@ -36,182 +36,61 @@
 ///
 namespace fbcpp
 {
-	class Client;
-}
-
-namespace fbcpp::impl
-{
-	class StatusWrapper : public fb::IStatusImpl<StatusWrapper, StatusWrapper>
-	{
-	public:
-		explicit StatusWrapper(Client& client, IStatus* status)
-			: client{client},
-			  status{status}
-		{
-		}
-
-	public:
-		static void checkException(StatusWrapper* status);
-
-		static void catchException(IStatus* status) noexcept;
-
-		static void clearException(StatusWrapper* status) noexcept
-		{
-			status->clearException();
-		}
-
-		void clearException()
-		{
-			if (dirty)
-			{
-				dirty = false;
-				status->init();
-			}
-		}
-
-		bool isDirty() const noexcept
-		{
-			return dirty;
-		}
-
-		bool hasData() const noexcept
-		{
-			return getState() & IStatus::STATE_ERRORS;
-		}
-
-		bool isEmpty() const noexcept
-		{
-			return !hasData();
-		}
-
-		static void setVersionError(
-			IStatus* status, const char* interfaceName, uintptr_t currentVersion, uintptr_t expectedVersion) noexcept
-		{
-			// clang-format off
-			const intptr_t codes[] = {
-				isc_arg_gds, isc_interface_version_too_old,
-				isc_arg_number, (intptr_t) expectedVersion,
-				isc_arg_number, (intptr_t) currentVersion,
-				isc_arg_string, (intptr_t) interfaceName,
-				isc_arg_end,
-			};
-			// clang-format on
-
-			status->setErrors(codes);
-		}
-
-	public:
-		void dispose() noexcept override
-		{
-			// Disposes only the delegated status. Let the user destroy this instance.
-			status->dispose();
-			status = nullptr;
-		}
-
-		void init() noexcept override
-		{
-			clearException();
-		}
-
-		unsigned getState() const noexcept override
-		{
-			return dirty ? status->getState() : 0;
-		}
-
-		void setErrors2(unsigned length, const intptr_t* value) noexcept override
-		{
-			dirty = true;
-			status->setErrors2(length, value);
-		}
-
-		void setWarnings2(unsigned length, const intptr_t* value) noexcept override
-		{
-			dirty = true;
-			status->setWarnings2(length, value);
-		}
-
-		void setErrors(const intptr_t* value) noexcept override
-		{
-			dirty = true;
-			status->setErrors(value);
-		}
-
-		void setWarnings(const intptr_t* value) noexcept override
-		{
-			dirty = true;
-			status->setWarnings(value);
-		}
-
-		const intptr_t* getErrors() const noexcept override
-		{
-			return dirty ? status->getErrors() : cleanStatus();
-		}
-
-		const intptr_t* getWarnings() const noexcept override
-		{
-			return dirty ? status->getWarnings() : cleanStatus();
-		}
-
-		IStatus* clone() const noexcept override
-		{
-			return status->clone();
-		}
-
-	protected:
-		Client& client;
-		IStatus* status;
-		bool dirty = false;
-
-		static const intptr_t* cleanStatus() noexcept
-		{
-			static intptr_t clean[3] = {1, 0, 0};
-			return clean;
-		}
-	};
-}  // namespace fbcpp::impl
-
-
-///
-/// fb-cpp namespace.
-///
-namespace fbcpp
-{
 	///
 	/// Base exception class for all fb-cpp exceptions.
 	///
-	class FbCppException : public std::runtime_error
+	class Exception : public std::runtime_error
 	{
 	public:
-		using std::runtime_error::runtime_error;
-
 		///
-		/// Constructs an FbCppException with the specified error message.
+		/// Constructs an Exception with the specified error message.
 		///
-		explicit FbCppException(const std::string& message)
-			: std::runtime_error{message}
+		explicit Exception(const std::string& message)
+			: std::runtime_error{message},
+			  sqlCode_{0}
 		{
 		}
-	};
-
-	///
-	/// Exception thrown when a Firebird database operation fails.
-	///
-	class DatabaseException final : public FbCppException
-	{
-	public:
-		using FbCppException::FbCppException;
 
 		///
-		/// Constructs a DatabaseException from a Firebird status vector.
+		/// Constructs an Exception from a Firebird status vector.
 		///
-		explicit DatabaseException(Client& client, const std::intptr_t* status)
-			: FbCppException{buildMessage(client, status)}
+		explicit Exception(const StatusVector& status, const std::string& context = "")
+			: std::runtime_error{buildMessage(status, context)},
+			  sqlCode_{fbcpp::getSqlCode(status)}
 		{
+		}
+
+		///
+		/// Returns the SQLCODE associated with this exception.
+		///
+		ISC_LONG getSqlCode() const noexcept
+		{
+			return sqlCode_;
 		}
 
 	private:
-		static std::string buildMessage(Client& client, const std::intptr_t* status);
+		static std::string buildMessage(const StatusVector& status, const std::string& context)
+		{
+			std::string message = getErrorMessage(status);
+
+			if (!context.empty())
+			{
+				if (!message.empty())
+					message = context + ": " + message;
+				else
+					message = context;
+			}
+
+			return message.empty() ? "Unknown database error" : message;
+		}
+
+		ISC_LONG sqlCode_;
 	};
+
+	// Alias for backwards compatibility
+	using FbCppException = Exception;
+	using DatabaseException = Exception;
+
 }  // namespace fbcpp
 
 
