@@ -2,7 +2,17 @@
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(firebird CONFIG)
+set(_fb_cpp_legacy "@FB_CPP_FIREBIRD_LEGACY_VALUE@")
+
+if(_fb_cpp_legacy)
+    find_package(Firebird2 CONFIG REQUIRED
+        PATHS "${ASV_PLAT_PORTS}/firebird2"
+        NO_DEFAULT_PATH)
+else()
+    find_package(Firebird5 CONFIG REQUIRED
+        PATHS "${ASV_PLAT_PORTS}/firebird5"
+        NO_DEFAULT_PATH)
+endif()
 
 set(_fb_cpp_use_boost_dll "@FB_CPP_USE_BOOST_DLL_VALUE@")
 set(_fb_cpp_use_boost_multiprecision "@FB_CPP_USE_BOOST_MULTIPRECISION_VALUE@")
@@ -17,6 +27,7 @@ endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/fb-cppTargets.cmake")
 
+unset(_fb_cpp_legacy)
 unset(_fb_cpp_use_boost_dll)
 unset(_fb_cpp_use_boost_multiprecision)
 
