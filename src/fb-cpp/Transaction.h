@@ -26,10 +26,13 @@
 #define FBCPP_TRANSACTION_H
 
 #include "fb-api.h"
+#if !FB_CPP_LEGACY_API
 #include "SmartPtrs.h"
+#endif
 #include <memory>
 #include <optional>
 #include <span>
+#include <cassert>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -380,10 +383,17 @@ namespace fbcpp
 		///
 		Transaction(Transaction&& o) noexcept
 			: client{o.client},
+#if FB_CPP_LEGACY_API
+			  handle{o.handle},
+#else
 			  handle{std::move(o.handle)},
+#endif
 			  state{o.state},
 			  isMultiDatabase{o.isMultiDatabase}
 		{
+#if FB_CPP_LEGACY_API
+			o.handle = 0;
+#endif
 			o.state = TransactionState::ROLLED_BACK;
 		}
 
@@ -421,18 +431,37 @@ namespace fbcpp
 		///
 		/// Returns whether the Transaction object is valid.
 		///
-		bool isValid() noexcept
+		bool isValid() const noexcept
 		{
+#if FB_CPP_LEGACY_API
+			return handle != 0;
+#else
 			return handle != nullptr;
+#endif
 		}
 
 		///
-		/// Returns the internal Firebird ITransaction handle.
+		/// Returns the internal Firebird handle.
 		///
+#if FB_CPP_LEGACY_API
+		isc_tr_handle getHandle() const noexcept
+		{
+			return handle;
+		}
+
+		///
+		/// Returns a pointer to the internal handle (for legacy API calls).
+		///
+		isc_tr_handle* getHandlePtr() noexcept
+		{
+			return &handle;
+		}
+#else
 		FbRef<fb::ITransaction> getHandle() noexcept
 		{
 			return handle;
 		}
+#endif
 
 		///
 		/// Returns the current transaction state.
@@ -494,7 +523,11 @@ namespace fbcpp
 
 	private:
 		Client& client;
+#if FB_CPP_LEGACY_API
+		isc_tr_handle handle = 0;
+#else
 		FbRef<fb::ITransaction> handle;
+#endif
 		TransactionState state = TransactionState::ACTIVE;
 		const bool isMultiDatabase = false;
 	};

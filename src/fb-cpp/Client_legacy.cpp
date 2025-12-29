@@ -22,25 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef FBCPP_H
-#define FBCPP_H
-
-#if FB_CPP_LEGACY_API
-// Firebird 2.5 Legacy C API
 #include "Client_legacy.h"
-#include "Attachment.h"
-#include "Transaction.h"
-#include "Descriptor.h"
-#include "Statement_legacy.h"
-#else
-// Firebird 3.0+ OO API
-#include "Client.h"
-#include "Attachment.h"
-#include "Transaction.h"
-#include "Descriptor.h"
-#include "Statement.h"
-#include "Blob.h"
-#include "EventListener.h"
-#endif
 
-#endif  // FBCPP_H
+// Client implementation is now header-only for the 2.5 C API
+// since it doesn't need to manage IMaster or other OO API interfaces.
+// The shutdown() method from 3.0+ API is not available in 2.5.

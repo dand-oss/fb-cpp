@@ -26,7 +26,9 @@
 #define FBCPP_ATTACHMENT_H
 
 #include "fb-api.h"
+#if !FB_CPP_LEGACY_API
 #include "SmartPtrs.h"
+#endif
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -188,8 +190,14 @@ namespace fbcpp
 		///
 		Attachment(Attachment&& o) noexcept
 			: client{o.client},
+#if FB_CPP_LEGACY_API
+			  handle{o.handle}
+		{
+			o.handle = 0;
+#else
 			  handle{std::move(o.handle)}
 		{
+#endif
 		}
 
 		Attachment& operator=(Attachment&&) = delete;
@@ -219,9 +227,13 @@ namespace fbcpp
 		///
 		/// Returns whether the Attachment object is valid.
 		///
-		bool isValid() noexcept
+		bool isValid() const noexcept
 		{
+#if FB_CPP_LEGACY_API
+			return handle != 0;
+#else
 			return handle != nullptr;
+#endif
 		}
 
 		///
@@ -233,12 +245,27 @@ namespace fbcpp
 		}
 
 		///
-		/// Returns the internal Firebird IAttachment handle.
+		/// Returns the internal Firebird handle.
 		///
+#if FB_CPP_LEGACY_API
+		isc_db_handle getHandle() const noexcept
+		{
+			return handle;
+		}
+
+		///
+		/// Returns a pointer to the internal handle (for legacy API calls).
+		///
+		isc_db_handle* getHandlePtr() noexcept
+		{
+			return &handle;
+		}
+#else
 		FbRef<fb::IAttachment> getHandle() noexcept
 		{
 			return handle;
 		}
+#endif
 
 		///
 		/// Disconnects from the database.
@@ -255,7 +282,11 @@ namespace fbcpp
 
 	private:
 		Client& client;
+#if FB_CPP_LEGACY_API
+		isc_db_handle handle = 0;
+#else
 		FbRef<fb::IAttachment> handle;
+#endif
 	};
 }  // namespace fbcpp
 

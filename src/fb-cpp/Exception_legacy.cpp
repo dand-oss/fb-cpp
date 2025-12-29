@@ -22,25 +22,7 @@
  * SOFTWARE.
  */
 
-#ifndef FBCPP_H
-#define FBCPP_H
+#include "Exception_legacy.h"
 
-#if FB_CPP_LEGACY_API
-// Firebird 2.5 Legacy C API
-#include "Client_legacy.h"
-#include "Attachment.h"
-#include "Transaction.h"
-#include "Descriptor.h"
-#include "Statement_legacy.h"
-#else
-// Firebird 3.0+ OO API
-#include "Client.h"
-#include "Attachment.h"
-#include "Transaction.h"
-#include "Descriptor.h"
-#include "Statement.h"
-#include "Blob.h"
-#include "EventListener.h"
-#endif
-
-#endif  // FBCPP_H
+// Exception implementation is now header-only for the 2.5 C API
+// since we use the simple fb_interpret() function.

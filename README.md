@@ -122,6 +122,46 @@ ctest --preset default
 cmake --build --preset default --target docs
 ```
 
+## Firebird 2.5 Legacy API Support
+
+fb-cpp can also be built against the Firebird 2.5 legacy C API instead of the default Firebird 3.0+ OO API.
+
+### Building with Firebird 2.5
+
+Since Firebird 2.5 is not available via vcpkg, you must provide the include and library paths manually:
+
+```bash
+cmake -DFB_CPP_FIREBIRD_LEGACY=ON \
+      -DFIREBIRD_INCLUDE_DIR=/path/to/firebird2/include \
+      -DFIREBIRD_LIBRARY=/path/to/libfbclient.so \
+      -B build .
+
+cmake --build build
+```
+
+### Feature Differences
+
+When building with `FB_CPP_FIREBIRD_LEGACY=ON`, the following features are **not available**:
+- INT128, DecFloat16, DecFloat34 types
+- BOOLEAN type
+- TIMESTAMP WITH TIME ZONE
+- Blob class
+- EventListener class
+
+Basic operations (connect, transactions, prepared statements, standard SQL types) work identically.
+
+### Compile-Time Detection
+
+Use the `FB_CPP_LEGACY_API` preprocessor macro to conditionally compile code:
+
+```cpp
+#if FB_CPP_LEGACY_API
+    // Firebird 2.5 specific code
+#else
+    // Firebird 3.0+ specific code
+#endif
+```
+
 ## Documentation
 
 The complete API documentation is available in the build `doc/docs/` directory after building with the `docs` target.
