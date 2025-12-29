@@ -125,11 +125,11 @@ write_basic_package_version_file(
 configure_package_config_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/fb-cppConfig.cmake.in"
 	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfig.cmake"
-	INSTALL_DESTINATION fb-cpp/cmake/fb-cpp
+	INSTALL_DESTINATION cmake/fb-cpp
 )
 
 install(FILES
 	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfig.cmake"
 	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfigVersion.cmake"
-	DESTINATION fb-cpp/cmake/fb-cpp
+	DESTINATION cmake/fb-cpp
 )
