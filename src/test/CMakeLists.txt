@@ -31,7 +31,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
 	PRIVATE fb-cpp
-	PRIVATE Firebird5::fbclient
+	PRIVATE Firebird2::fbclient
 	PRIVATE Boost::filesystem
 	PRIVATE Boost::unit_test_framework
 )
