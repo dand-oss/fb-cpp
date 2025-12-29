@@ -73,16 +73,23 @@ if(_fb_cpp_boost_components)
 endif()
 
 # Firebird dependency
-if(FB_CPP_FIREBIRD_LEGACY)
-	# FB2 has no vcpkg package - user provides FIREBIRD_INCLUDE_DIR and FIREBIRD_LIBRARY
-	if(NOT FIREBIRD_INCLUDE_DIR OR NOT FIREBIRD_LIBRARY)
-		message(FATAL_ERROR "FB_CPP_FIREBIRD_LEGACY requires FIREBIRD_INCLUDE_DIR and FIREBIRD_LIBRARY")
-	endif()
+# Parent CMakeLists.txt may provide FIREBIRD_TARGET (ASV ports) or
+# FIREBIRD_INCLUDE_DIR/FIREBIRD_LIBRARY (manual paths) or
+# nothing (use vcpkg find_package)
+if(FIREBIRD_TARGET)
+	# ASV ports: parent already found the target, just use it
+	set(_firebird_link_target ${FIREBIRD_TARGET})
+elseif(FIREBIRD_INCLUDE_DIR AND FIREBIRD_LIBRARY)
+	# Manual paths provided
 	add_library(firebird INTERFACE IMPORTED)
 	target_include_directories(firebird INTERFACE ${FIREBIRD_INCLUDE_DIR})
 	target_link_libraries(firebird INTERFACE ${FIREBIRD_LIBRARY})
+	set(_firebird_link_target firebird)
+elseif(FB_CPP_FIREBIRD_LEGACY)
+	message(FATAL_ERROR "FB_CPP_FIREBIRD_LEGACY requires FIREBIRD_INCLUDE_DIR and FIREBIRD_LIBRARY")
 else()
 	find_package(firebird CONFIG REQUIRED)
+	set(_firebird_link_target firebird)
 endif()
 
 add_library(${PROJECT_NAME}
@@ -128,7 +135,7 @@ target_compile_definitions(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
 	PUBLIC
-		firebird
+		${_firebird_link_target}
 	PRIVATE
 		${CMAKE_DL_LIBS}
 )
