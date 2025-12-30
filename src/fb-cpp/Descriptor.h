@@ -99,6 +99,7 @@ namespace fbcpp
 		///
 		INT64 = SQL_INT64,
 
+#if !FB_CPP_LEGACY_API
 		///
 		/// Timestamp with time zone.
 		///
@@ -138,6 +139,7 @@ namespace fbcpp
 		/// Boolean value.
 		///
 		BOOLEAN = SQL_BOOLEAN,
+#endif
 	};
 
 	///
@@ -200,6 +202,7 @@ namespace fbcpp
 		///
 		INT64 = SQL_INT64,
 
+#if !FB_CPP_LEGACY_API
 		///
 		/// Timestamp with time zone.
 		///
@@ -239,6 +242,7 @@ namespace fbcpp
 		/// Boolean value.
 		///
 		BOOLEAN = SQL_BOOLEAN,
+#endif
 	};
 
 	///
