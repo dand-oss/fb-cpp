@@ -1,33 +1,31 @@
 cmake_minimum_required(VERSION 3.18)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+# API selection option - MUST be before project()
+option(FB_CPP_FIREBIRD_LEGACY "Use Firebird 2.5 legacy C API instead of 3.0+ OO API" OFF)
 
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
-set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+# Set project name based on Firebird version
+if(FB_CPP_FIREBIRD_LEGACY)
+	set(_project_name "fb2-cpp")
+else()
+	set(_project_name "fb5-cpp")
+endif()
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out/bin)
-
-project(fb-cpp-main
+project(${_project_name}
 	VERSION 0.0.2
 	DESCRIPTION "C++ client library for Firebird"
 	HOMEPAGE_URL "https://github.com/asfernandes/fb-cpp"
 	LANGUAGES CXX
 )
 
-# API selection option
-option(FB_CPP_FIREBIRD_LEGACY "Use Firebird 2.5 legacy C API instead of 3.0+ OO API" OFF)
-
 ###############
-# ASI default settings
+# ASV default settings
 list(APPEND CMAKE_MODULE_PATH "$ENV{ASV_CMAKE}")
 include(asv_cmake_defaults)
 asv_cmake_defaults( )
 ###############
+
+# Project-specific overrides
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 # Find Firebird based on API choice
 if(FB_CPP_FIREBIRD_LEGACY)
@@ -64,8 +62,6 @@ asv_print_package_properties(
 # Boost.DLL is header-only, included in Boost::headers
 # Set to OFF - we link fbclient directly, no dynamic loading needed
 set(FB_CPP_USE_BOOST_DLL OFF)
-
-enable_language(CXX)
 
 # Disable testing - requires boost_unit_test_framework
 set(BUILD_TESTING OFF)
@@ -117,19 +113,19 @@ endif()
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
 	VERSION ${PROJECT_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
 
 configure_package_config_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/fb-cppConfig.cmake.in"
-	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfig.cmake"
-	INSTALL_DESTINATION cmake/fb-cpp
+	"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
 install(FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfig.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/fb-cppConfigVersion.cmake"
-	DESTINATION cmake/fb-cpp
+	"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+	DESTINATION lib/cmake/${PROJECT_NAME}
 )

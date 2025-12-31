@@ -1,6 +1,6 @@
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(fb-cpp CXX)
+project(${CMAKE_PROJECT_NAME} CXX)
 
 option(FB_CPP_USE_BOOST_DLL "Enable Boost.DLL support for loading fbclient at runtime" ON)
 option(FB_CPP_USE_BOOST_MULTIPRECISION "Enable Boost.Multiprecision helpers for INT128 and DECFLOAT types" ON)
@@ -177,5 +177,5 @@ install(TARGETS ${PROJECT_NAME}
 install(EXPORT ${PROJECT_NAME}Targets
 	FILE ${PROJECT_NAME}Targets.cmake
 	NAMESPACE ${PROJECT_NAME}::
-	DESTINATION fb-cpp/cmake/${PROJECT_NAME}
+	DESTINATION lib/cmake/${PROJECT_NAME}
 )
