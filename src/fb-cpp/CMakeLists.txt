@@ -92,10 +92,16 @@ else()
 	set(_firebird_link_target firebird)
 endif()
 
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
 	${HEADERS}
 	${IMPL_HEADERS}
 	${IMPL_SOURCES}
+)
+
+# Symbol visibility for shared library
+set_target_properties(${PROJECT_NAME} PROPERTIES
+	CXX_VISIBILITY_PRESET hidden
+	VISIBILITY_INLINES_HIDDEN ON
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -148,23 +154,34 @@ endif()
 
 unset(_fb_cpp_boost_components)
 
-file(GLOB_RECURSE HEADER_FILES
-	"${CMAKE_CURRENT_LIST_DIR}/*.h"
-	"${CMAKE_CURRENT_LIST_DIR}/*.hpp"
+# Public headers to install (minimal API)
+set(PUBLIC_HEADERS
+	fb-cpp_api.h
+	fb-cpp.h
+	config.h
+	fb-api.h
+	Attachment.h
+	Transaction.h
 )
 
-foreach(HEADER_FILE ${HEADER_FILES})
-	file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_LIST_DIR} ${HEADER_FILE})
-	get_filename_component(REL_DIR ${REL_PATH} DIRECTORY)
-	if(REL_DIR)
-		install(FILES ${HEADER_FILE}
-			DESTINATION include/fb-cpp/${REL_DIR}
-		)
-	else()
-		install(FILES ${HEADER_FILE}
-			DESTINATION include/fb-cpp
-		)
-	endif()
+if(FB_CPP_FIREBIRD_LEGACY)
+	list(APPEND PUBLIC_HEADERS
+		Client_legacy.h
+		Statement_legacy.h
+		Exception_legacy.h
+	)
+else()
+	list(APPEND PUBLIC_HEADERS
+		Client.h
+		Statement.h
+		Exception.h
+	)
+endif()
+
+foreach(HEADER ${PUBLIC_HEADERS})
+	install(FILES ${CMAKE_CURRENT_LIST_DIR}/${HEADER}
+		DESTINATION include/fb-cpp
+	)
 endforeach()
 
 install(TARGETS ${PROJECT_NAME}
