@@ -162,6 +162,7 @@ set(PUBLIC_HEADERS
 	fb-api.h
 	Attachment.h
 	Transaction.h
+	Descriptor.h
 )
 
 if(FB_CPP_FIREBIRD_LEGACY)
