@@ -191,6 +191,7 @@ namespace fbcpp
 		///
 		Attachment(Attachment&& o) noexcept
 			: client{o.client},
+			  uri_{std::move(o.uri_)},
 #if FB_CPP_LEGACY_API
 			  handle{o.handle}
 		{
@@ -246,6 +247,14 @@ namespace fbcpp
 		}
 
 		///
+		/// Returns the database URI used to create this Attachment.
+		///
+		const std::string& getUri() const noexcept
+		{
+			return uri_;
+		}
+
+		///
 		/// Returns the internal Firebird handle.
 		///
 #if FB_CPP_LEGACY_API
@@ -283,6 +292,7 @@ namespace fbcpp
 
 	private:
 		Client& client;
+		std::string uri_;
 #if FB_CPP_LEGACY_API
 		isc_db_handle handle = 0;
 #else

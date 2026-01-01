@@ -42,6 +42,7 @@
 #include <charconv>
 #include <cerrno>
 #include <cstdlib>
+#include <format>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -2634,8 +2635,8 @@ namespace fbcpp
 
 		[[noreturn]] static void throwInvalidType(const char* actualType, DescriptorAdjustedType descriptorType)
 		{
-			throw FbCppException("Invalid type: actual type " + std::string(actualType) + ", descriptor type " +
-				std::to_string(static_cast<unsigned>(descriptorType)));
+			throw FbCppException(std::format("Invalid type: actual type {}, descriptor type {}",
+				actualType, static_cast<unsigned>(descriptorType)));
 		}
 
 		template <typename T>

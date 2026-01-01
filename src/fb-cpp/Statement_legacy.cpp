@@ -26,12 +26,21 @@
 #include "Attachment.h"
 #include "Transaction.h"
 #include <cstring>
+#include <format>
 
 using namespace fbcpp;
+
+std::string Statement::truncateSql(size_t maxLen) const
+{
+	if (sql_.length() <= maxLen)
+		return sql_;
+	return sql_.substr(0, maxLen - 3) + "...";
+}
 
 
 Statement::Statement(Attachment& attachment, Transaction& transaction, std::string_view sql)
 	: attachment{attachment},
+	  sql_{sql},
 	  inSqlda_(10),   // Initial allocation for 10 params
 	  outSqlda_(10)   // Initial allocation for 10 columns
 {
@@ -43,7 +52,7 @@ Statement::Statement(Attachment& attachment, Transaction& transaction, std::stri
 	// Allocate statement handle
 	isc_dsql_allocate_statement(status.data(), attachment.getHandlePtr(), &handle);
 	if (hasError(status))
-		throw Exception(status, "Failed to allocate statement");
+		throw Exception(status, "Statement::allocate", attachment.getUri());
 
 	// Prepare the statement
 	isc_dsql_prepare(
@@ -59,7 +68,7 @@ Statement::Statement(Attachment& attachment, Transaction& transaction, std::stri
 	{
 		isc_dsql_free_statement(status.data(), &handle, DSQL_drop);
 		handle = 0;
-		throw Exception(status, "Failed to prepare statement");
+		throw Exception(status, std::format("Statement::prepare SQL: {}", truncateSql()), attachment.getUri());
 	}
 
 	// Get statement type
@@ -70,15 +79,15 @@ Statement::Statement(Attachment& attachment, Transaction& transaction, std::stri
 	{
 		case StatementType::START_TRANSACTION:
 			free();
-			throw Exception("Cannot use SET TRANSACTION with Statement. Use Transaction class.");
+			throw Exception(std::format("Statement: Cannot use SET TRANSACTION - use Transaction class. SQL: {}", truncateSql()));
 
 		case StatementType::COMMIT:
 			free();
-			throw Exception("Cannot use COMMIT with Statement. Use Transaction::commit().");
+			throw Exception(std::format("Statement: Cannot use COMMIT - use Transaction::commit(). SQL: {}", truncateSql()));
 
 		case StatementType::ROLLBACK:
 			free();
-			throw Exception("Cannot use ROLLBACK with Statement. Use Transaction::rollback().");
+			throw Exception(std::format("Statement: Cannot use ROLLBACK - use Transaction::rollback(). SQL: {}", truncateSql()));
 
 		default:
 			break;
@@ -90,7 +99,7 @@ Statement::Statement(Attachment& attachment, Transaction& transaction, std::stri
 		outSqlda_.resize(outSqlda_.get()->sqld);
 		isc_dsql_describe(status.data(), &handle, SQL_DIALECT_CURRENT, outSqlda_.get());
 		if (hasError(status))
-			throw Exception(status, "Failed to describe output");
+			throw Exception(status, std::format("Statement::describe output ({} columns)", outSqlda_.get()->sqld), attachment.getUri());
 	}
 
 	// Allocate output buffers
@@ -100,7 +109,7 @@ Statement::Statement(Attachment& attachment, Transaction& transaction, std::stri
 	// Describe input parameters
 	isc_dsql_describe_bind(status.data(), &handle, SQL_DIALECT_CURRENT, inSqlda_.get());
 	if (hasError(status))
-		throw Exception(status, "Failed to describe input parameters");
+		throw Exception(status, std::format("Statement::describe input ({} params)", inSqlda_.get()->sqld), attachment.getUri());
 
 	// Check if we need more input parameters
 	if (inSqlda_.get()->sqld > inSqlda_.allocated())
@@ -108,7 +117,7 @@ Statement::Statement(Attachment& attachment, Transaction& transaction, std::stri
 		inSqlda_.resize(inSqlda_.get()->sqld);
 		isc_dsql_describe_bind(status.data(), &handle, SQL_DIALECT_CURRENT, inSqlda_.get());
 		if (hasError(status))
-			throw Exception(status, "Failed to describe input parameters");
+			throw Exception(status, std::format("Statement::describe input ({} params)", inSqlda_.get()->sqld), attachment.getUri());
 	}
 
 	// Allocate input buffers
@@ -132,7 +141,7 @@ StatementType Statement::queryStatementType()
 		infoBuffer);
 
 	if (hasError(status))
-		throw Exception(status, "Failed to get statement type");
+		throw Exception(status, std::format("Statement::queryType SQL: {}", truncateSql()), attachment.getUri());
 
 	// Parse the info buffer
 	if (infoBuffer[0] == isc_info_sql_stmt_type)
@@ -170,7 +179,7 @@ bool Statement::execute(Transaction& transaction)
 				inSqlda_.get()->sqld > 0 ? inSqlda_.get() : nullptr);
 
 			if (hasError(status))
-				throw Exception(status, "Failed to execute SELECT");
+				throw Exception(status, std::format("Statement::execute SELECT: {}", truncateSql()), attachment.getUri());
 
 			cursorOpen_ = true;
 
@@ -190,7 +199,7 @@ bool Statement::execute(Transaction& transaction)
 				outSqlda_.get()->sqld > 0 ? outSqlda_.get() : nullptr);
 
 			if (hasError(status))
-				throw Exception(status, "Failed to execute procedure");
+				throw Exception(status, std::format("Statement::execute PROCEDURE: {}", truncateSql()), attachment.getUri());
 
 			return outSqlda_.get()->sqld > 0;
 		}
@@ -206,7 +215,7 @@ bool Statement::execute(Transaction& transaction)
 				inSqlda_.get()->sqld > 0 ? inSqlda_.get() : nullptr);
 
 			if (hasError(status))
-				throw Exception(status, "Failed to execute statement");
+				throw Exception(status, std::format("Statement::execute: {}", truncateSql()), attachment.getUri());
 
 			return false;
 		}
@@ -232,7 +241,7 @@ bool Statement::fetchNext()
 		return false;
 
 	if (hasError(status))
-		throw Exception(status, "Failed to fetch row");
+		throw Exception(status, std::format("Statement::fetch ({} columns)", outSqlda_.count()), attachment.getUri());
 
 	return true;
 }
@@ -262,7 +271,7 @@ void Statement::free()
 	handle = 0;
 
 	if (hasError(status))
-		throw Exception(status, "Failed to free statement");
+		throw Exception(status, "Statement::free", attachment.getUri());
 }
 
 std::string Statement::getPlan()
@@ -283,7 +292,7 @@ std::string Statement::getPlan()
 		infoBuffer);
 
 	if (hasError(status))
-		throw Exception(status, "Failed to get plan");
+		throw Exception(status, std::format("Statement::getPlan SQL: {}", truncateSql()), attachment.getUri());
 
 	if (infoBuffer[0] == isc_info_sql_get_plan)
 	{
@@ -312,7 +321,7 @@ ISC_LONG Statement::getAffectedRows()
 		infoBuffer);
 
 	if (hasError(status))
-		throw Exception(status, "Failed to get affected rows");
+		throw Exception(status, "Statement::getAffectedRows", attachment.getUri());
 
 	ISC_LONG count = 0;
 
@@ -538,7 +547,11 @@ void fbcpp::executeImmediate(Attachment& attachment, Transaction& transaction, s
 		nullptr);
 
 	if (hasError(status))
-		throw Exception(status, "Failed to execute immediate");
+	{
+		std::string sqlStr{sql};
+		std::string truncatedSql = sqlStr.length() > 200 ? sqlStr.substr(0, 197) + "..." : sqlStr;
+		throw Exception(status, std::format("executeImmediate: {}", truncatedSql), attachment.getUri());
+	}
 }
 
 // ========== Date/Timestamp helpers ==========

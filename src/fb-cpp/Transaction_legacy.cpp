@@ -27,6 +27,7 @@
 #include "Client_legacy.h"
 #include "Exception_legacy.h"
 #include <cassert>
+#include <format>
 
 using namespace fbcpp;
 
@@ -109,7 +110,8 @@ static TPB buildTpb(const TransactionOptions& options)
 
 
 Transaction::Transaction(Attachment& attachment, const TransactionOptions& options)
-	: client{attachment.getClient()}
+	: client{attachment.getClient()},
+	  uri_{attachment.getUri()}
 {
 	assert(attachment.isValid());
 
@@ -126,7 +128,7 @@ Transaction::Transaction(Attachment& attachment, const TransactionOptions& optio
 		const_cast<char*>(tpb.data()));
 
 	if (hasError(status))
-		throw Exception(status, "Failed to start transaction");
+		throw Exception(status, "Transaction::start", uri_);
 }
 
 void Transaction::commit()
@@ -142,7 +144,7 @@ void Transaction::commit()
 	state = TransactionState::COMMITTED;
 
 	if (hasError(status))
-		throw Exception(status, "Failed to commit transaction");
+		throw Exception(status, "Transaction::commit", uri_);
 }
 
 void Transaction::commitRetaining()
@@ -155,7 +157,7 @@ void Transaction::commitRetaining()
 	isc_commit_retaining(status.data(), &handle);
 
 	if (hasError(status))
-		throw Exception(status, "Failed to commit retaining transaction");
+		throw Exception(status, "Transaction::commitRetaining", uri_);
 }
 
 void Transaction::rollback()
@@ -171,7 +173,7 @@ void Transaction::rollback()
 	state = TransactionState::ROLLED_BACK;
 
 	if (hasError(status))
-		throw Exception(status, "Failed to rollback transaction");
+		throw Exception(status, "Transaction::rollback", uri_);
 }
 
 void Transaction::rollbackRetaining()
@@ -184,5 +186,5 @@ void Transaction::rollbackRetaining()
 	isc_rollback_retaining(status.data(), &handle);
 
 	if (hasError(status))
-		throw Exception(status, "Failed to rollback retaining transaction");
+		throw Exception(status, "Transaction::rollbackRetaining", uri_);
 }

@@ -26,12 +26,14 @@
 #include "Client_legacy.h"
 #include "Exception_legacy.h"
 #include <cassert>
+#include <format>
 
 using namespace fbcpp;
 
 
 Attachment::Attachment(Client& client, const std::string& uri, const AttachmentOptions& options)
-	: client{client}
+	: client{client},
+	  uri_{uri}
 {
 	// Build Database Parameter Block
 	DPB dpb;
@@ -73,7 +75,10 @@ Attachment::Attachment(Client& client, const std::string& uri, const AttachmentO
 	}
 
 	if (hasError(status))
-		throw Exception(status, "Failed to " + std::string(options.getCreateDatabase() ? "create" : "attach to") + " database");
+	{
+		const char* operation = options.getCreateDatabase() ? "create" : "attach to";
+		throw Exception(status, std::format("Attachment::{}", operation), uri);
+	}
 }
 
 void Attachment::disconnectOrDrop(bool drop)
@@ -90,7 +95,10 @@ void Attachment::disconnectOrDrop(bool drop)
 	handle = 0;
 
 	if (hasError(status))
-		throw Exception(status, drop ? "Failed to drop database" : "Failed to detach from database");
+	{
+		const char* operation = drop ? "drop" : "detach";
+		throw Exception(status, std::format("Attachment::{}", operation), uri_);
+	}
 }
 
 

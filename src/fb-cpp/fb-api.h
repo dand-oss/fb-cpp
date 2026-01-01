@@ -62,6 +62,12 @@ inline ISC_LONG getSqlCode(const StatusVector& status)
 	return isc_sqlcode(const_cast<ISC_STATUS*>(status.data()));
 }
 
+/// Get engine/GDS error code from status vector
+inline ISC_LONG getEngineCode(const StatusVector& status)
+{
+	return (status[0] == 1) ? static_cast<ISC_LONG>(status[1]) : 0;
+}
+
 /// Get error message from status vector
 inline std::string getErrorMessage(const StatusVector& status)
 {

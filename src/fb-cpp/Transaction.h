@@ -384,6 +384,7 @@ namespace fbcpp
 		///
 		Transaction(Transaction&& o) noexcept
 			: client{o.client},
+			  uri_{std::move(o.uri_)},
 #if FB_CPP_LEGACY_API
 			  handle{o.handle},
 #else
@@ -524,6 +525,7 @@ namespace fbcpp
 
 	private:
 		Client& client;
+		std::string uri_;  // Database URI for error messages
 #if FB_CPP_LEGACY_API
 		isc_tr_handle handle = 0;
 #else

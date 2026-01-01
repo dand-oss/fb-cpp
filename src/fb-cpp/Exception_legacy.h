@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <string>
 #include <cstdint>
+#include <format>
 
 
 ///
@@ -39,6 +40,7 @@ namespace fbcpp
 {
 	///
 	/// Base exception class for all fb-cpp exceptions.
+	/// Provides comprehensive debug info including origin, database URI, and error codes.
 	///
 	class FBCPP_API Exception : public std::runtime_error
 	{
@@ -48,17 +50,51 @@ namespace fbcpp
 		///
 		explicit Exception(const std::string& message)
 			: std::runtime_error{message},
-			  sqlCode_{0}
+			  sqlCode_{0},
+			  engineCode_{0}
 		{
 		}
 
 		///
-		/// Constructs an Exception from a Firebird status vector.
+		/// Constructs an Exception from a Firebird status vector with context.
 		///
 		explicit Exception(const StatusVector& status, const std::string& context = "")
-			: std::runtime_error{buildMessage(status, context)},
-			  sqlCode_{fbcpp::getSqlCode(status)}
+			: std::runtime_error{buildMessage(status, context, "")},
+			  origin_{context},
+			  sqlCode_{fbcpp::getSqlCode(status)},
+			  engineCode_{fbcpp::getEngineCode(status)}
 		{
+		}
+
+		///
+		/// Constructs an Exception from a Firebird status vector with full context.
+		/// @param status The Firebird status vector
+		/// @param context The origin/context of the error (e.g., "Attachment::connect")
+		/// @param uri The database URI or connection string
+		///
+		Exception(const StatusVector& status, const std::string& context, const std::string& uri)
+			: std::runtime_error{buildMessage(status, context, uri)},
+			  origin_{context},
+			  uri_{uri},
+			  sqlCode_{fbcpp::getSqlCode(status)},
+			  engineCode_{fbcpp::getEngineCode(status)}
+		{
+		}
+
+		///
+		/// Returns the origin/context of the error.
+		///
+		const std::string& getOrigin() const noexcept
+		{
+			return origin_;
+		}
+
+		///
+		/// Returns the database URI associated with this exception.
+		///
+		const std::string& getUri() const noexcept
+		{
+			return uri_;
 		}
 
 		///
@@ -69,23 +105,46 @@ namespace fbcpp
 			return sqlCode_;
 		}
 
-	private:
-		static std::string buildMessage(const StatusVector& status, const std::string& context)
+		///
+		/// Returns the Firebird engine/GDS error code.
+		///
+		ISC_LONG getEngineCode() const noexcept
 		{
-			std::string message = getErrorMessage(status);
-
-			if (!context.empty())
-			{
-				if (!message.empty())
-					message = context + ": " + message;
-				else
-					message = context;
-			}
-
-			return message.empty() ? "Unknown database error" : message;
+			return engineCode_;
 		}
 
+	private:
+		static std::string buildMessage(const StatusVector& status,
+		                                const std::string& context,
+		                                const std::string& uri)
+		{
+			std::string errorMsg = getErrorMessage(status);
+			ISC_LONG sqlCode = fbcpp::getSqlCode(status);
+			ISC_LONG engineCode = fbcpp::getEngineCode(status);
+
+			std::string result;
+
+			if (!context.empty())
+				result = std::format("{}: ", context);
+
+			if (!uri.empty())
+				result += std::format("Database '{}' - ", uri);
+
+			if (sqlCode != 0 || engineCode != 0)
+				result += std::format("SQLCODE: {}, Engine: {} - ", sqlCode, engineCode);
+
+			if (!errorMsg.empty())
+				result += errorMsg;
+			else if (result.empty())
+				result = "Unknown database error";
+
+			return result;
+		}
+
+		std::string origin_;
+		std::string uri_;
 		ISC_LONG sqlCode_;
+		ISC_LONG engineCode_;
 	};
 
 	// Alias for backwards compatibility

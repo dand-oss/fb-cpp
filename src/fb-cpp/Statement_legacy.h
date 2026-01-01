@@ -289,8 +289,10 @@ namespace fbcpp
 
 	private:
 		StatementType queryStatementType();
+		std::string truncateSql(size_t maxLen = 200) const;
 
 		Attachment& attachment;
+		std::string sql_;
 		isc_stmt_handle handle = 0;
 		StatementType type_ = StatementType::SELECT;
 		XSqlDa inSqlda_;
