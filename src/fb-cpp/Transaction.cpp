@@ -133,7 +133,8 @@ static FbUniquePtr<fb::IXpbBuilder> buildTpb(
 
 
 Transaction::Transaction(Attachment& attachment, const TransactionOptions& options)
-	: client{attachment.getClient()}
+	: client{attachment.getClient()},
+	  uri_{attachment.getUri()}
 {
 	assert(attachment.isValid());
 
@@ -150,7 +151,8 @@ Transaction::Transaction(Attachment& attachment, const TransactionOptions& optio
 }
 
 Transaction::Transaction(Attachment& attachment, std::string_view setTransactionCmd)
-	: client{attachment.getClient()}
+	: client{attachment.getClient()},
+	  uri_{attachment.getUri()}
 {
 	assert(attachment.isValid());
 

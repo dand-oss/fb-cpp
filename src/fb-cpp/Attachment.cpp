@@ -31,7 +31,8 @@ using namespace fbcpp::impl;
 
 
 Attachment::Attachment(Client& client, const std::string& uri, const AttachmentOptions& options)
-	: client{client}
+	: client{client},
+	  uri_{uri}
 {
 	const auto master = client.getMaster();
 
