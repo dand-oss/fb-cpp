@@ -125,13 +125,16 @@ namespace fbcpp
 			std::string result;
 
 			if (!context.empty())
-				result = std::format("{}: ", context);
+				result = std::format("{}\n", context);
 
 			if (!uri.empty())
-				result += std::format("Database '{}' - ", uri);
+				result += std::format("Database: {}\n", uri);
 
-			if (sqlCode != 0 || engineCode != 0)
-				result += std::format("SQLCODE: {}, Engine: {} - ", sqlCode, engineCode);
+			if (sqlCode != 0)
+				result += std::format("SQLCODE: {}\n", sqlCode);
+
+			if (engineCode != 0)
+				result += std::format("Engine: {}\n", engineCode);
 
 			if (!errorMsg.empty())
 				result += errorMsg;
