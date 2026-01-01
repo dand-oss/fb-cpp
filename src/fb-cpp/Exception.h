@@ -25,6 +25,7 @@
 #ifndef FBCPP_EXCEPTION_H
 #define FBCPP_EXCEPTION_H
 
+#include "fb-cpp_api.h"
 #include "fb-api.h"
 #include <stdexcept>
 #include <string>
@@ -179,7 +180,7 @@ namespace fbcpp
 	///
 	/// Base exception class for all fb-cpp exceptions.
 	///
-	class FbCppException : public std::runtime_error
+	class FBCPP_API FbCppException : public std::runtime_error
 	{
 	public:
 		using std::runtime_error::runtime_error;
@@ -196,7 +197,7 @@ namespace fbcpp
 	///
 	/// Exception thrown when a Firebird database operation fails.
 	///
-	class DatabaseException final : public FbCppException
+	class FBCPP_API DatabaseException final : public FbCppException
 	{
 	public:
 		using FbCppException::FbCppException;

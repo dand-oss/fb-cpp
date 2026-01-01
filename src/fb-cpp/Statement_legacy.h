@@ -25,6 +25,7 @@
 #ifndef FBCPP_STATEMENT_LEGACY_H
 #define FBCPP_STATEMENT_LEGACY_H
 
+#include "fb-cpp_api.h"
 #include "fb-api.h"
 #include "Exception_legacy.h"
 #include "Descriptor.h"
@@ -105,7 +106,7 @@ namespace fbcpp
 	///
 	/// Represents a prepared SQL statement.
 	///
-	class Statement final
+	class FBCPP_API Statement final
 	{
 	public:
 		///

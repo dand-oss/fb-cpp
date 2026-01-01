@@ -25,6 +25,7 @@
 #ifndef FBCPP_TRANSACTION_H
 #define FBCPP_TRANSACTION_H
 
+#include "fb-cpp_api.h"
 #include "fb-api.h"
 #if !FB_CPP_LEGACY_API
 #include "SmartPtrs.h"
@@ -350,7 +351,7 @@ namespace fbcpp
 	/// being committed or rolled back (and not prepared), it will be automatically
 	/// rolled back.
 	///
-	class Transaction final
+	class FBCPP_API Transaction final
 	{
 	public:
 		///

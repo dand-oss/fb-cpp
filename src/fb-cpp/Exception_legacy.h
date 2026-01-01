@@ -25,6 +25,7 @@
 #ifndef FBCPP_EXCEPTION_LEGACY_H
 #define FBCPP_EXCEPTION_LEGACY_H
 
+#include "fb-cpp_api.h"
 #include "fb-api.h"
 #include <stdexcept>
 #include <string>
@@ -39,7 +40,7 @@ namespace fbcpp
 	///
 	/// Base exception class for all fb-cpp exceptions.
 	///
-	class Exception : public std::runtime_error
+	class FBCPP_API Exception : public std::runtime_error
 	{
 	public:
 		///
